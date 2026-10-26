@@ -7,13 +7,13 @@ export function generateStaticParams() {
   return GAMES.map((g) => ({ id: g.id }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/juegos/[id]/jugar">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/games/[id]/jugar">): Promise<Metadata> {
   const { id } = await params;
   const game = getGame(id);
   return game ? { title: `Jugando ${game.title}` } : {};
 }
 
-export default async function PlayPage({ params }: PageProps<"/juegos/[id]/jugar">) {
+export default async function PlayPage({ params }: PageProps<"/games/[id]/jugar">) {
   const { id } = await params;
   const game = getGame(id);
   if (!game) notFound();

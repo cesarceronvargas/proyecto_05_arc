@@ -8,13 +8,13 @@ export function generateStaticParams() {
   return GAMES.map((g) => ({ id: g.id }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/juegos/[id]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/games/[id]">): Promise<Metadata> {
   const { id } = await params;
   const game = getGame(id);
   return game ? { title: game.title, description: game.short } : {};
 }
 
-export default async function GameDetailPage({ params }: PageProps<"/juegos/[id]">) {
+export default async function GameDetailPage({ params }: PageProps<"/games/[id]">) {
   const { id } = await params;
   const game = getGame(id);
   if (!game) notFound();
@@ -53,8 +53,8 @@ export default async function GameDetailPage({ params }: PageProps<"/juegos/[id]
             </div>
           </div>
           <div className="detail-actions">
-            <Link href={`/juegos/${game.id}/jugar`} className="btn xl pulse">▶  JUGAR AHORA</Link>
-            <Link href="/" className="btn ghost lg">VOLVER AL VAULT</Link>
+            <Link href={`/games/${game.id}/jugar`} className="btn xl pulse">▶  JUGAR AHORA</Link>
+            <Link href="/games" className="btn ghost lg">VOLVER AL VAULT</Link>
           </div>
         </div>
       </div>
