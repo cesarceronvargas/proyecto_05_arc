@@ -1,6 +1,6 @@
 # SPEC 01 — MVP visual de Arcade Vault
 
-> **Estado:** Aprovado
+> **Estado:** Implementado
 > **Depende de:** Ninguna
 > **Fecha:** 2026-10-25
 > **Objetivo:** Implementar en Next.js App Router las cinco pantallas de `references/templates/` (Biblioteca, Detalle, Reproductor, Salón de la Fama y Auth) con datos mock y sin ningún juego real.
@@ -169,6 +169,8 @@ Antes de usar `params`, `generateStaticParams`, `generateMetadata`, `notFound` o
 - **Sí:** desplegable de usuario con "Cerrar sesión", en lugar del clic directo de la plantilla, que cerraba sesión por accidente.
 - **Sí:** se eliminan los botones GOOGLE/GITHUB y el contador CRÉDITOS. Prometen funcionalidad que no existe.
 - **Sí:** se mantiene el tilt 3D de las tarjetas (componente cliente).
+- **Sí:** `references/**` se añade a `globalIgnores` en `eslint.config.mjs`. El prototipo usa `React` global (UMD + Babel) y hacía fallar `npm run lint` aunque no forma parte de la app. Decidido durante la implementación del paso 13.
+- **Sí:** en ≤ 840px el botón "Iniciar Sesión" y el menú `NOMBRE ▾` se ocultan de la Nav, y el panel lateral muestra "Cerrar sesión" cuando hay usuario. La plantilla desbordaba a 375px (la hamburguesa quedaba cortada y la página se desplazaba 43px en horizontal). Detectado al comparar con Playwright tras el paso 13.
 - **Sí:** el nombre del producto es "Arcade Vault", como en las plantillas y CLAUDE.md. El prompt inicial decía "Arcade Bot", pero se interpretó como el mismo producto.
 
 ## Riesgos
