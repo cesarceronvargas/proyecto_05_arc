@@ -50,7 +50,7 @@ export default function GameOverModal({ gameId, score, defaultName, onRestart }:
         )}
         <div className="actions">
           <button type="button" className="btn" onClick={onRestart}>JUGAR DE NUEVO</button>
-          <Link href="/" className="btn magenta">VOLVER AL VAULT</Link>
+          <Link href="/games" className="btn magenta">VOLVER AL VAULT</Link>
         </div>
       </div>
     </div>

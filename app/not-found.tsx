@@ -27,7 +27,7 @@ export default function NotFound() {
         </div>
       </div>
       <div className="mt-8 text-center">
-        <Link href="/" className="btn lg">VOLVER A LA BIBLIOTECA</Link>
+        <Link href="/games" className="btn lg">VOLVER A LA BIBLIOTECA</Link>
       </div>
     </div>
   );
