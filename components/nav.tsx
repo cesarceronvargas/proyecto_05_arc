@@ -6,12 +6,13 @@ import { useState } from "react";
 import UserMenu from "@/components/user-menu";
 import { logout, useUser } from "@/lib/storage";
 
-type Section = "inicio" | "biblioteca" | "salon" | "auth";
+type Section = "inicio" | "biblioteca" | "salon" | "about" | "auth";
 
 function sectionOf(pathname: string): Section | null {
   if (pathname === "/") return "inicio";
   if (pathname === "/games" || pathname.startsWith("/games/")) return "biblioteca";
   if (pathname.startsWith("/salon")) return "salon";
+  if (pathname === "/about") return "about";
   if (pathname.startsWith("/auth")) return "auth";
   return null;
 }
@@ -37,6 +38,7 @@ export default function Nav() {
           <Link href="/" className={active("inicio")}>Inicio</Link>
           <Link href="/games" className={active("biblioteca")}>Biblioteca</Link>
           <Link href="/salon" className={active("salon")}>Salón de la Fama</Link>
+          <Link href="/about" className={active("about")}>Acerca de</Link>
         </div>
         <div className="spacer" />
         {user ? (
@@ -61,6 +63,7 @@ export default function Nav() {
         <Link href="/" className={active("inicio")} onClick={close}>Inicio</Link>
         <Link href="/games" className={active("biblioteca")} onClick={close}>Biblioteca</Link>
         <Link href="/salon" className={active("salon")} onClick={close}>Salón de la Fama</Link>
+        <Link href="/about" className={active("about")} onClick={close}>Acerca de</Link>
         <Link href="/auth" className={active("auth")} onClick={close}>
           {user ? "Cuenta" : "Iniciar Sesión"}
         </Link>
