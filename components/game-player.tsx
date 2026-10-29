@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import AsteroidsPlayer from "@/components/asteroids-player";
 import GameOverModal from "@/components/game-over-modal";
 import type { Game } from "@/lib/games";
 import { useUser } from "@/lib/storage";
@@ -9,8 +10,13 @@ import { useUser } from "@/lib/storage";
 const LIVES = 3;
 const POINTS_PER_LEVEL = 2500;
 
-// Visual simulation only: the score climbs on a timer, there is no real game.
 export default function GamePlayer({ game }: { game: Game }) {
+  if (game.engine === "asteroids") return <AsteroidsPlayer game={game} />;
+  return <SimulatedPlayer game={game} />;
+}
+
+// Visual simulation only: the score climbs on a timer, there is no real game.
+function SimulatedPlayer({ game }: { game: Game }) {
   const user = useUser();
   const [score, setScore] = useState(0);
   const [paused, setPaused] = useState(false);
