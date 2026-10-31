@@ -1,11 +1,9 @@
-// Simulated session and scores in localStorage (keys match references/templates/app.jsx).
+// Simulated session in localStorage (key matches references/templates/app.jsx).
 import { useMemo, useSyncExternalStore } from "react";
 
 export type User = { name: string };
-export type ScoreEntry = { game: string; score: number; name: string; at: number };
 
 const USER_KEY = "av_user";
-const SCORES_KEY = "av_scores";
 // localStorage's own "storage" event only fires in other tabs, so same-tab writes dispatch this one.
 const CHANGE_EVENT = "av-storage";
 
@@ -61,22 +59,4 @@ export function login(name: string) {
 
 export function logout() {
   write(USER_KEY, null);
-}
-
-function readScores(): ScoreEntry[] {
-  const scores = parse<unknown>(read(SCORES_KEY), []);
-  return Array.isArray(scores) ? (scores as ScoreEntry[]) : [];
-}
-
-export function saveScore(entry: Omit<ScoreEntry, "at">) {
-  write(SCORES_KEY, JSON.stringify([...readScores(), { ...entry, at: Date.now() }]));
-}
-
-// Client-only: call it after hydration (e.g. once useUser() returns a user).
-export function getBestScore(game: string, name: string): ScoreEntry | null {
-  let best: ScoreEntry | null = null;
-  for (const s of readScores()) {
-    if (s.game === game && s.name === name && (!best || s.score > best.score)) best = s;
-  }
-  return best;
 }
