@@ -226,6 +226,7 @@ export default function AsteroidsPlayer({ game }: { game: Game }) {
           gameId={game.id}
           score={score}
           defaultName={playerName}
+          ranked
           onRestart={restart}
         />
       )}

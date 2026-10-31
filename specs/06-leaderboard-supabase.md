@@ -1,6 +1,6 @@
 # SPEC 06 — Leaderboard real en Supabase
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 04, SPEC 05
 > **Fecha:** 2026-10-30
 > **Objetivo:** Crear las tablas `games` y `scores` en Supabase y mostrar rankings reales (global y por juego) en `/salon` y `/games/[id]`, guardando las puntuaciones de ROCAS desde el `GameOverModal`.

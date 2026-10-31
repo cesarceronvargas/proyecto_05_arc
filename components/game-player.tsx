@@ -94,7 +94,7 @@ function SimulatedPlayer({ game }: { game: Game }) {
       </div>
 
       {over && (
-        <GameOverModal gameId={game.id} score={score} defaultName={playerName} onRestart={restart} />
+        <GameOverModal gameId={game.id} score={score} defaultName={playerName} ranked={false} onRestart={restart} />
       )}
     </div>
   );

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Leaderboard from "@/components/leaderboard";
-import { GAMES, getGame, seededScores } from "@/lib/games";
+import { GAMES, getGame } from "@/lib/games";
+import { getTopScores } from "@/lib/leaderboard";
 
 export function generateStaticParams() {
   return GAMES.map((g) => ({ id: g.id }));
@@ -19,7 +20,9 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[id]"
   const game = getGame(id);
   if (!game) notFound();
 
-  const scores = seededScores(id.length * 17 + 3, 10);
+  // Only games with a real engine have a ranking; the rest keep their catalogue "best".
+  const scores = game.engine ? await getTopScores(game.id) : null;
+  const best = scores ? (scores[0]?.score.toLocaleString("es-ES") ?? "—") : game.best.toLocaleString("es-ES");
 
   return (
     <div className="av-detail fade-in">
@@ -44,7 +47,7 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[id]"
             <div>
               <div className="l">Mejor global</div>
               <div className="v text-magenta [text-shadow:0_0_6px_rgba(255,0,110,0.5)]">
-                {game.best.toLocaleString("es-ES")}
+                {best}
               </div>
             </div>
             <div>
