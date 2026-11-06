@@ -12,6 +12,8 @@ Work follows **Spec Driven Design** using the `/spec` and `/spec-impl` skills fr
 
 ## Skills
 
+Para añadir o portar un juego real (motor + leaderboard), genera su spec con `/add-game` (p. ej. `/add-game 03-tetris`) e impleméntala con `/spec-impl`.
+
 Usa siempre /frontend-design para diseñar la intefaz de usuario
 
 ## Commands
