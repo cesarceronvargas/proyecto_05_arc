@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AsteroidsPlayer from "@/components/asteroids-player";
+import BlockfallPlayer from "@/components/blockfall-player";
 import GameOverModal from "@/components/game-over-modal";
 import type { Game } from "@/lib/games";
 import { useUser } from "@/lib/storage";
@@ -12,6 +13,7 @@ const POINTS_PER_LEVEL = 2500;
 
 export default function GamePlayer({ game }: { game: Game }) {
   if (game.engine === "asteroids") return <AsteroidsPlayer game={game} />;
+  if (game.engine === "blockfall") return <BlockfallPlayer game={game} />;
   return <SimulatedPlayer game={game} />;
 }
 
@@ -26,7 +28,10 @@ function SimulatedPlayer({ game }: { game: Game }) {
 
   useEffect(() => {
     if (over || paused) return;
-    const t = setInterval(() => setScore((s) => s + Math.floor(10 + Math.random() * 90)), 220);
+    const t = setInterval(
+      () => setScore((s) => s + Math.floor(10 + Math.random() * 90)),
+      220,
+    );
     return () => clearInterval(t);
   }, [over, paused]);
 
@@ -58,11 +63,24 @@ function SimulatedPlayer({ game }: { game: Game }) {
           </div>
         </div>
         <div className="hud-actions">
-          <button type="button" className="btn yellow" onClick={() => setPaused((p) => !p)} disabled={over}>
+          <button
+            type="button"
+            className="btn yellow"
+            onClick={() => setPaused((p) => !p)}
+            disabled={over}
+          >
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
-          <button type="button" className="btn magenta" onClick={() => setOver(true)}>FIN</button>
-          <Link href={`/games/${game.id}`} className="btn ghost">SALIR</Link>
+          <button
+            type="button"
+            className="btn magenta"
+            onClick={() => setOver(true)}
+          >
+            FIN
+          </button>
+          <Link href={`/games/${game.id}`} className="btn ghost">
+            SALIR
+          </Link>
         </div>
       </div>
 
@@ -94,7 +112,13 @@ function SimulatedPlayer({ game }: { game: Game }) {
       </div>
 
       {over && (
-        <GameOverModal gameId={game.id} score={score} defaultName={playerName} ranked={false} onRestart={restart} />
+        <GameOverModal
+          gameId={game.id}
+          score={score}
+          defaultName={playerName}
+          ranked={false}
+          onRestart={restart}
+        />
       )}
     </div>
   );
