@@ -23,15 +23,20 @@ Forma que debe tener la spec que escribe `/add-game`. Es el formato de `specs/05
 - **Motor portado/creado en TypeScript** en `games/<engine>/`:
   - `games/<engine>/<archivo>.ts`: <constantes, utilidades, entidades; `draw` con `ctx` por parámetro>.
   - `games/<engine>/engine.ts`: `create<Name>Game(canvas, callbacks)` con el estado en un closure y un controlador con `start`, `pause`, `resume`, `end`, `restart` y `destroy`.
-- **Mecánica <idéntica al original | con estos cambios>:** <valores numéricos clave: velocidades, puntos, vidas, niveles, tiempos>.
+- **Mecánica <idéntica al original | con estos cambios>:** <valores numéricos clave: velocidades, puntos, vidas, niveles, tiempos>. <Desde cero, esta línea se sustituye por: **Mecánica fijada aquí:** reglas completas y tabla de valores confirmada por el usuario. Esta spec es la única fuente de verdad.>
+- **Reglas del motor:** `emit()` antes de `onGameOver` y dentro de `end()`, para que el modal reciba los puntos del último frame; `onPauseChange(false)` en `end()` y `restart()` si estaba en pausa; `clearKeys()` al cambiar de estado y en `blur`; listener de `resize` que rehace el backing store; sin APIs de navegador en el nivel superior del módulo; puntuación entera con tope `MAX_SCORE`.
+- **Se elimina del original:** <récords en `localStorage`, trucos que alteren la puntuación, overlays propios…>. <Borrar si es desde cero.>
 - **HUD en React:** el canvas no pinta <lo que pintaba el original>. El `.player-hud` muestra Jugador, Puntuación, <stats> con datos reales.
 - **Pantalla de inicio:** <fondo animado o tablero vacío> y overlay de React con el título, los controles y `<PULSA … PARA EMPEZAR>`. Empieza con <tecla> o con un clic.
 - **Pausa:** botón PAUSA/REANUDAR, `P` o `Escape`, y pausa automática con `blur` y `visibilitychange`. Overlay `EN PAUSA` con `PULSA P O REANUDAR PARA CONTINUAR`.
-- **Fin de partida:** <condición>. El motor llama a `onGameOver(score)` y React abre `GameOverModal` con `ranked`. JUGAR DE NUEVO llama a `restart()`. Se elimina el overlay de game over del original.
+- **Fin de partida:** <condición de derrota y, si tiene final, de victoria>. El motor llama a `onGameOver(score)` y React abre `GameOverModal` con `ranked`. JUGAR DE NUEVO llama a `restart()`. <Se elimina el overlay de game over del original.>
 - **Botón FIN:** `end()` y abre el modal con la puntuación actual.
 - **Estilo neón:** <colores por elemento>, como constantes en `games/<engine>/<archivo>.ts`; se fijan con `/frontend-design`.
 - **Canvas nítido y escalado:** resolución lógica <W×H>, <cómo encaja en la CRT 4:3>, backing store × `devicePixelRatio`.
-- **Teclado:** <teclas y acciones>. `preventDefault` solo en esas teclas y nunca con el foco en `input`, `textarea` o `button`.
+- **Teclado:** <teclas y acciones>. `preventDefault` solo en esas teclas y nunca con el foco en `input`, `textarea`, `button`, `select` o `contentEditable`.
+- **Ratón:** <acciones>. Coordenadas lógicas con `(e.clientX - rect.left) * (W / rect.width)`, nunca con `canvas.width`. Listeners quitados en `destroy()`. <Borrar si no aplica.>
+- **Imágenes:** <archivos> en `public/games/<engine>/`, cargadas dentro de `create<Name>Game`. Solo se dibujan si `img.complete && img.naturalWidth > 0`, con forma vectorial de respaldo. <Borrar si no aplica.>
+- **Sonido:** <archivos> en `public/games/<engine>/`, con `.play().catch(() => {})`, y la extensión añadida al matcher de `proxy.ts`. <Borrar si no aplica.>
 - **Aviso en pantallas táctiles:** `ESTE JUEGO NECESITA TECLADO` en el overlay de inicio.
 - **Catálogo:** `GameEngine` pasa a `"asteroids" | "<engine>"`. <Entrada `<id>` existente gana `engine: "<engine>"` (y ajuste de `long`) | Entrada nueva con todos sus campos y clase `cover-<algo>` en `app/globals.css`>. `GamePlayer` monta `<Name>Player` cuando `game.engine === "<engine>"`.
 - **Leaderboard:** migración `supabase/migrations/<ts>_game_<id>.sql` con la fila `<id>` en `public.games`, aplicada con el MCP de Supabase, y tipos regenerados. Con eso `submitScore`, `/games/<id>` y `/salon` lo incluyen sin cambios de código.
@@ -39,7 +44,8 @@ Forma que debe tener la spec que escribe `/add-game`. Es el formato de `specs/05
 **Fuera de alcance (para futuras specs):**
 
 - <Controles táctiles o gamepad.>
-- <Sonido y música.>
+- <Sonido y música, si el original no los tiene o el usuario los dejó fuera.>
+- `best` y `plays` del catálogo, la actividad de la Home y las etiquetas fijas de `/games/<id>`.
 - <Mecánicas que el original no tiene.>
 - Interfaz `GameEngine` compartida y refactor de ROCAS.
 - Anti-trampas y tests automatizados.
@@ -106,13 +112,17 @@ Convenciones:
 
 ## Riesgos
 
-| Riesgo                                                                   | Mitigación                                                                                |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Strict Mode o `<Activity>` dejan bucles o listeners duplicados           | Motor creado en `useLayoutEffect`, `destroy()` en el cleanup y reset del estado de React. |
-| Las teclas del juego interfieren con el input del modal                  | Sin `preventDefault` con foco en campos y entrada ignorada en `gameover`.                 |
-| `dt` enorme al volver de otra pestaña                                    | Pausa automática, `dt` reiniciado al reanudar y tope de 50 ms.                            |
-| Falta la fila en `public.games`                                          | Migración en el plan y criterio que comprueba el guardado. El modal muestra el error.     |
-| <Riesgo propio del juego (encaje en 4:3, assets, puntuaciones enormes…)> | <Mitigación>                                                                              |
+| Riesgo                                                           | Mitigación                                                                                |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Strict Mode o `<Activity>` dejan bucles o listeners duplicados   | Motor creado en `useLayoutEffect`, `destroy()` en el cleanup y reset del estado de React. |
+| Las teclas del juego interfieren con el input del modal          | Sin `preventDefault` con foco en campos y entrada ignorada en `gameover`.                 |
+| `dt` enorme al volver de otra pestaña                            | Pausa automática, `dt` reiniciado al reanudar y tope de 50 ms.                            |
+| Falta la fila en `public.games`                                  | Migración en el plan y criterio que comprueba el guardado. El modal muestra el error.     |
+| El modal guarda una puntuación vieja                             | `emit()` antes de `onGameOver` y en `end()`, con un criterio que lo comprueba.            |
+| <Assets: un archivo no carga>                                    | <Guarda en `drawImage`, respaldo vectorial y `.play().catch()`.>                          |
+| <Ratón: coordenadas mal escaladas con DPR o a 390 px>            | <Conversión con `W / rect.width` y criterio con DPR 2.>                                   |
+| <Entrada reutilizada citada como simulada en una spec anterior>  | <Esta spec sustituye esos criterios; la simulación se verifica con otro juego.>           |
+| <Riesgo propio del juego (encaje en 4:3, puntuaciones enormes…)> | <Mitigación>                                                                              |
 
 ## Lo que **no** está en esta spec
 
