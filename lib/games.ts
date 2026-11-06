@@ -3,7 +3,7 @@
 export type Category = "ARCADE" | "PUZZLE" | "SHOOTER" | "VERSUS";
 export type AccentColor = "cyan" | "magenta" | "yellow" | "green";
 
-export type GameEngine = "asteroids";
+export type GameEngine = "asteroids" | "blockfall";
 
 export type Game = {
   id: string;
@@ -31,15 +31,16 @@ export const GAMES: Game[] = [
     plays: "12.4K",
   },
   {
-    id: "caida",
-    title: "CAÍDA",
+    id: "blockfall",
+    title: "BLOCKFALL",
     short: "Encaja las piezas antes de que el techo te aplaste.",
-    long: "Piezas geométricas descienden desde la oscuridad. Rótalas, encástralas y limpia líneas para sobrevivir. La velocidad aumenta sin piedad cada 10 líneas.",
+    long: "Piezas geométricas descienden desde la oscuridad, y entre ellas acecha una tuerca con hueco. Rótalas, encástralas y limpia líneas para sobrevivir. La velocidad aumenta sin piedad cada 10 líneas.",
     cat: "PUZZLE",
     cover: "cover-tetro",
     color: "magenta",
     best: 184220,
     plays: "31.8K",
+    engine: "blockfall",
   },
   {
     id: "serpentina",
@@ -110,7 +111,13 @@ export const GAMES: Game[] = [
   },
 ];
 
-export const CATEGORIES = ["TODOS", "ARCADE", "PUZZLE", "SHOOTER", "VERSUS"] as const;
+export const CATEGORIES = [
+  "TODOS",
+  "ARCADE",
+  "PUZZLE",
+  "SHOOTER",
+  "VERSUS",
+] as const;
 
 export function getGame(id: string): Game | undefined {
   return GAMES.find((g) => g.id === id);
