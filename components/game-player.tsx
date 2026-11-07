@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import AsteroidsPlayer from "@/components/asteroids-player";
 import BlockfallPlayer from "@/components/blockfall-player";
+import BreakoutPlayer from "@/components/breakout-player";
 import GameOverModal from "@/components/game-over-modal";
 import type { Game } from "@/lib/games";
 import { useUser } from "@/lib/storage";
@@ -14,6 +15,7 @@ const POINTS_PER_LEVEL = 2500;
 export default function GamePlayer({ game }: { game: Game }) {
   if (game.engine === "asteroids") return <AsteroidsPlayer game={game} />;
   if (game.engine === "blockfall") return <BlockfallPlayer game={game} />;
+  if (game.engine === "breakout") return <BreakoutPlayer game={game} />;
   return <SimulatedPlayer game={game} />;
 }
 
