@@ -3,7 +3,7 @@
 export type Category = "ARCADE" | "PUZZLE" | "SHOOTER" | "VERSUS";
 export type AccentColor = "cyan" | "magenta" | "yellow" | "green";
 
-export type GameEngine = "asteroids" | "blockfall" | "breakout";
+export type GameEngine = "asteroids" | "blockfall" | "breakout" | "snake";
 
 export type Game = {
   id: string;
@@ -54,6 +54,18 @@ export const GAMES: Game[] = [
     best: 2040,
     plays: "9.4K",
     engine: "breakout",
+  },
+  {
+    id: "serpiente",
+    title: "SERPIENTE",
+    short: "Come, crece y no te muerdas la cola.",
+    long: "Una serpiente de neón recorre un tablero cuadriculado y no se detiene nunca. Gírala con las flechas o WASD, devora frutas para crecer y sobrevive mientras la velocidad sube cada cinco piezas. Una pared o tu propio cuerpo ponen fin a la partida.",
+    cat: "ARCADE",
+    cover: "cover-snake",
+    color: "green",
+    best: 1200,
+    plays: "12.1K",
+    engine: "snake",
   },
 ];
 
