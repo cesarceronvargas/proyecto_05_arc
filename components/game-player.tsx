@@ -6,6 +6,7 @@ import AsteroidsPlayer from "@/components/asteroids-player";
 import BlockfallPlayer from "@/components/blockfall-player";
 import BreakoutPlayer from "@/components/breakout-player";
 import GameOverModal from "@/components/game-over-modal";
+import SnakePlayer from "@/components/snake-player";
 import type { Game } from "@/lib/games";
 import { useUser } from "@/lib/storage";
 
@@ -16,6 +17,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   if (game.engine === "asteroids") return <AsteroidsPlayer game={game} />;
   if (game.engine === "blockfall") return <BlockfallPlayer game={game} />;
   if (game.engine === "breakout") return <BreakoutPlayer game={game} />;
+  if (game.engine === "snake") return <SnakePlayer game={game} />;
   return <SimulatedPlayer game={game} />;
 }
 
