@@ -5,6 +5,10 @@ import Leaderboard from "@/components/leaderboard";
 import { GAMES, getGame } from "@/lib/games";
 import { getTopScores } from "@/lib/leaderboard";
 
+// Never prefetched: a prefetch made right after saving a score can get the previous ranking
+// from the static cache, and the router then shows it until a full reload. SPEC 08.
+export const prefetch = "force-disabled";
+
 export function generateStaticParams() {
   return GAMES.map((g) => ({ id: g.id }));
 }

@@ -4,6 +4,10 @@ import HallOfFame from "@/components/hall-of-fame";
 import { GAMES } from "@/lib/games";
 import { getTopScores } from "@/lib/leaderboard";
 
+// Never prefetched: a prefetch made right after saving a score can get the previous ranking
+// from the static cache, and the router then shows it until a full reload. SPEC 08.
+export const prefetch = "force-disabled";
+
 export const metadata: Metadata = {
   title: "Salón de la Fama",
 };
