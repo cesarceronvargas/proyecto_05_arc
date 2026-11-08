@@ -9,10 +9,11 @@ import {
   type MouseEvent,
 } from "react";
 import GameOverModal from "@/components/game-over-modal";
+import SkinPicker from "@/components/skin-picker";
 import { createSnakeGame, type SnakeGame } from "@/games/snake/engine";
 import { COLS, ROWS, START_LENGTH } from "@/games/snake/entities";
 import type { Game } from "@/lib/games";
-import { useUser } from "@/lib/storage";
+import { saveSkin, useSkin, useUser } from "@/lib/storage";
 
 type Phase = "ready" | "playing" | "over";
 
@@ -41,6 +42,10 @@ function isTouchOnly() {
 const OVERLAY_AROUND_SNAKE =
   "gap-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.72)_40%,transparent_46%,transparent_54%,rgba(0,0,0,0.72)_60%)]";
 
+// The start overlay keeps the bottom half for the keys, so the picker sits at the top of the
+// screen, above the title (utilities win over the components layer of .on-screen).
+const PICKER_ON_TOP = "on-screen top-[clamp(8px,2.4vw,18px)] bottom-auto";
+
 // Focus left on a HUD button would swallow the game keys (and Space would click it again).
 function releaseFocus(e: MouseEvent<HTMLElement>) {
   e.currentTarget.blur();
@@ -63,19 +68,33 @@ export default function SnakePlayer({ game }: { game: Game }) {
   // Remounts the modal on every run so its "saved" state starts fresh.
   const [run, setRun] = useState(0);
   const playerName = user?.name ?? "INVITADO";
+  const skin = useSkin(game.id);
+  const skinRef = useRef(skin);
+  const chooseSkin = (next: typeof skin) => saveSkin(game.id, next);
+
+  // Declared before the engine effect so on mount skinRef is current when the engine is
+  // created; afterwards only this effect re-runs and the engine is never recreated.
+  useLayoutEffect(() => {
+    skinRef.current = skin;
+    engineRef.current?.setSkin(skin);
+  }, [skin]);
 
   // Layout effect so the cleanup runs before Activity hides the route (cacheComponents keeps
   // this page alive after navigating away). Coming back creates a fresh engine in "ready",
   // so the React state is reset with it. Setters are stable: no other re-runs.
   useLayoutEffect(() => {
-    const engine = createSnakeGame(canvasRef.current!, {
-      onScore: setScore,
-      onLength: setLength,
-      onLevel: setLevel,
-      onPauseChange: setPaused,
-      onStart: () => setPhase("playing"),
-      onGameOver: () => setPhase("over"),
-    });
+    const engine = createSnakeGame(
+      canvasRef.current!,
+      {
+        onScore: setScore,
+        onLength: setLength,
+        onLevel: setLevel,
+        onPauseChange: setPaused,
+        onStart: () => setPhase("playing"),
+        onGameOver: () => setPhase("over"),
+      },
+      { skin: skinRef.current },
+    );
     engineRef.current = engine;
     return () => {
       engine.destroy();
@@ -199,6 +218,14 @@ export default function SnakePlayer({ game }: { game: Game }) {
               </div>
             </button>
           )}
+          {/* Sibling of the overlay button: a button inside a button is invalid HTML. */}
+          {phase === "ready" && (
+            <SkinPicker
+              value={skin}
+              onChange={chooseSkin}
+              className={PICKER_ON_TOP}
+            />
+          )}
 
           {paused && (
             <div className="crt-content z-[5] bg-black/60">
@@ -207,6 +234,11 @@ export default function SnakePlayer({ game }: { game: Game }) {
                 <div className="mono mt-2.5 text-[11px] tracking-[0.16em] text-ink-dim">
                   PULSA P O REANUDAR PARA CONTINUAR
                 </div>
+                <SkinPicker
+                  value={skin}
+                  onChange={chooseSkin}
+                  className="mt-6"
+                />
               </div>
             </div>
           )}

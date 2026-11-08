@@ -1,5 +1,6 @@
 // Simulated session in localStorage (key matches references/templates/app.jsx).
 import { useMemo, useSyncExternalStore } from "react";
+import { DEFAULT_SKIN, isSkinId, type SkinId } from "@/games/shared/skins";
 
 export type User = { name: string };
 
@@ -45,15 +46,39 @@ function subscribe(onChange: () => void) {
 
 export function useUser(): User | null {
   // The snapshot is the raw string so it stays referentially stable between renders.
-  const raw = useSyncExternalStore(subscribe, () => read(USER_KEY), () => null);
+  const raw = useSyncExternalStore(
+    subscribe,
+    () => read(USER_KEY),
+    () => null,
+  );
   return useMemo(() => {
     const user = parse<User | null>(raw, null);
     return user && typeof user.name === "string" ? user : null;
   }, [raw]);
 }
 
+// ── Skin per game (av_skin_<gameId>) ─────────────────────────────────────────
+const SKIN_PREFIX = "av_skin_";
+
+// Missing or invalid values fall back to DEFAULT_SKIN; the server snapshot is DEFAULT_SKIN too,
+// so hydration always renders the default and switches right after.
+export function useSkin(gameId: string): SkinId {
+  const raw = useSyncExternalStore(
+    subscribe,
+    () => read(SKIN_PREFIX + gameId),
+    () => null,
+  );
+  return isSkinId(raw) ? raw : DEFAULT_SKIN;
+}
+
+export function saveSkin(gameId: string, skin: SkinId) {
+  write(SKIN_PREFIX + gameId, skin);
+}
+
 export function login(name: string) {
-  const user: User = { name: (name.trim() || "PLAYER1").toUpperCase().slice(0, 10) };
+  const user: User = {
+    name: (name.trim() || "PLAYER1").toUpperCase().slice(0, 10),
+  };
   write(USER_KEY, JSON.stringify(user));
 }
 

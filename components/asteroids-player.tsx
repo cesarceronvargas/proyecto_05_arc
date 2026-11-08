@@ -9,12 +9,13 @@ import {
   type MouseEvent,
 } from "react";
 import GameOverModal from "@/components/game-over-modal";
+import SkinPicker from "@/components/skin-picker";
 import {
   createAsteroidsGame,
   type AsteroidsGame,
 } from "@/games/asteroids/engine";
 import type { Game } from "@/lib/games";
-import { useUser } from "@/lib/storage";
+import { saveSkin, useSkin, useUser } from "@/lib/storage";
 
 type Phase = "ready" | "playing" | "over";
 
@@ -61,20 +62,34 @@ export default function AsteroidsPlayer({ game }: { game: Game }) {
   // Remounts the modal on every run so its "saved" state starts fresh.
   const [run, setRun] = useState(0);
   const playerName = user?.name ?? "INVITADO";
+  const skin = useSkin(game.id);
+  const skinRef = useRef(skin);
+  const chooseSkin = (next: typeof skin) => saveSkin(game.id, next);
+
+  // Declared before the engine effect so on mount skinRef is current when the engine is
+  // created; afterwards only this effect re-runs and the engine is never recreated.
+  useLayoutEffect(() => {
+    skinRef.current = skin;
+    engineRef.current?.setSkin(skin);
+  }, [skin]);
 
   // Layout effect so the cleanup runs before Activity hides the route (cacheComponents keeps
   // this page alive after navigating away). Coming back creates a fresh engine in "ready",
   // so the React state is reset with it. Setters are stable: no other re-runs.
   useLayoutEffect(() => {
-    const engine = createAsteroidsGame(canvasRef.current!, {
-      onScore: setScore,
-      onLives: setLives,
-      onLevel: setLevel,
-      onTripleShot: setTriple,
-      onPauseChange: setPaused,
-      onStart: () => setPhase("playing"),
-      onGameOver: () => setPhase("over"),
-    });
+    const engine = createAsteroidsGame(
+      canvasRef.current!,
+      {
+        onScore: setScore,
+        onLives: setLives,
+        onLevel: setLevel,
+        onTripleShot: setTriple,
+        onPauseChange: setPaused,
+        onStart: () => setPhase("playing"),
+        onGameOver: () => setPhase("over"),
+      },
+      { skin: skinRef.current },
+    );
     engineRef.current = engine;
     return () => {
       engine.destroy();
@@ -201,6 +216,14 @@ export default function AsteroidsPlayer({ game }: { game: Game }) {
               )}
             </button>
           )}
+          {/* Sibling of the overlay button: a button inside a button is invalid HTML. */}
+          {phase === "ready" && (
+            <SkinPicker
+              value={skin}
+              onChange={chooseSkin}
+              className="on-screen"
+            />
+          )}
 
           {paused && (
             <div className="crt-content z-[5] bg-black/60">
@@ -209,6 +232,11 @@ export default function AsteroidsPlayer({ game }: { game: Game }) {
                 <div className="mono mt-2.5 text-[11px] tracking-[0.16em] text-ink-dim">
                   PULSA P O REANUDAR PARA CONTINUAR
                 </div>
+                <SkinPicker
+                  value={skin}
+                  onChange={chooseSkin}
+                  className="mt-6"
+                />
               </div>
             </div>
           )}
