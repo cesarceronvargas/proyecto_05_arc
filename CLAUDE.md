@@ -20,6 +20,7 @@ Work follows **Spec Driven Design**: write a spec before implementing a feature.
 
 - `@game-planner` (subagente en `.claude/agents/`): decide qué juego añadir a continuación y deja el prompt listo para `/add-game`. Sus sugerencias están en `references/templates/game-sugestion-todo.md` y su memoria en `.claude/agent-memory/game-planner/`. No crea specs ni código.
 - `@game-jam` (subagente en `.claude/agents/`): recibe un tema y crea 3 juegos originales, cada uno con `01-<nombre>-core.md` y `02-<nombre>-diseno.md` en `specs/game-jam/<game-id>/`, en `Borrador` (`<nombre>` es el título en minúsculas, sin acentos y con guiones; esta nomenclatura es obligatoria). No crea código. Para implementar uno, su `01-<nombre>-core.md` se mueve a `specs/NN-juego-<slug>.md`, se numera y se aprueba.
+- `@skin-designer` (subagente en `.claude/agents/`): audita que cada juego real tenga los skins CLÁSICO (por defecto), NEÓN y RETRO con selector por juego (`av_skin_<gameId>`), e implementa en código los que falten. Solo cambia lo visual; no hace commits. Su memoria está en `.claude/agent-memory/skin-designer/`.
 
 ## Commands
 

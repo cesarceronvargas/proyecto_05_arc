@@ -97,6 +97,13 @@ Se incluyen en la spec solo si aplican.
 - La plataforma no tiene control de volumen; añadirlo es otra spec.
 - `proxy.ts` excluye imágenes de su matcher pero no audio, así que cada archivo de sonido pasaría por `updateSession`. La spec añade la extensión al matcher.
 
+**Skins** (obligatorio en todo juego real)
+
+- `games/<engine>/skins.ts` exporta `Palette` y `SKINS: Record<SkinId, Palette>` con `clasico` (por defecto), `neon` y `retro`, usando `SkinId` y `DEFAULT_SKIN` de `games/shared/skins.ts`. Los `draw*` reciben la paleta por parámetro; no queda un `COLORS` fijo.
+- `create<Name>Game(canvas, callbacks, options?: { skin?: SkinId })` y `setSkin(id)` en el objeto del juego, que redibuja sin reiniciar la partida.
+- El player monta `components/skin-picker.tsx` y guarda la elección por juego en `av_skin_<gameId>` (`lib/storage.ts`).
+- Los skins solo cambian lo visual. El detalle del estándar está en `.claude/agents/skin-designer.md`; si la infraestructura compartida aún no existe, la spec lo recoge como dependencia (se crea con `@skin-designer`).
+
 **Juegos con final**
 
 - Ganar también pasa a `gameover` y llama a `onGameOver(score)`, con el mismo `GameOverModal`, cuyo título es `FIN DEL JUEGO`. Un mensaje de victoria propio obliga a ampliar `GameOverModal`, y eso debe constar en la spec.
@@ -184,6 +191,7 @@ Copiar, adaptar nombres y añadir los específicos del juego (valores numéricos
 - [ ] En desarrollo (Strict Mode) solo corre un bucle.
 - [ ] El canvas se ve nítido con `devicePixelRatio` 2, sigue nítido tras redimensionar la ventana y se adapta a 390 px sin scroll horizontal.
 - [ ] Con puntero táctil el overlay de inicio muestra `ESTE JUEGO NECESITA TECLADO`.
+- [ ] El juego ofrece los skins CLÁSICO (por defecto), NEÓN y RETRO; cambiar de skin en partida o en pausa redibuja sin reiniciar, y la elección se recuerda al recargar.
 - [ ] ROCAS y los juegos simulados siguen funcionando igual.
 - [ ] No hay errores ni avisos de hidratación en `/games/<id>` y `/games/<id>/jugar`.
 
