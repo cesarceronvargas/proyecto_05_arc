@@ -2,7 +2,6 @@
 import {
   Asteroid,
   Bullet,
-  COLORS,
   H,
   POINTS,
   POWERUP_DROP_CHANCE,
@@ -13,7 +12,10 @@ import {
   W,
   dist,
   rand,
+  type ParticleTone,
 } from "./entities";
+import { SKINS, type Palette } from "./skins";
+import { DEFAULT_SKIN, type SkinId } from "../shared/skins";
 
 export type AsteroidsCallbacks = {
   onScore: (score: number) => void;
@@ -35,7 +37,12 @@ export type AsteroidsGame = {
   resume: () => void;
   end: () => void; // FIN button: goes to gameover without calling onGameOver
   restart: () => void; // new run straight into "playing"
+  setSkin: (skin: SkinId) => void; // visual only: redraws at once, the run is untouched
   destroy: () => void;
+};
+
+export type AsteroidsOptions = {
+  skin?: SkinId;
 };
 
 const GAME_KEYS = new Set([
@@ -59,9 +66,12 @@ function isFormControl(target: EventTarget | null) {
 export function createAsteroidsGame(
   canvas: HTMLCanvasElement,
   callbacks: AsteroidsCallbacks,
+  options: AsteroidsOptions = {},
 ): AsteroidsGame {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context not available");
+
+  let palette: Palette = SKINS[options.skin ?? DEFAULT_SKIN];
 
   // ── Input ───────────────────────────────────────────────────────────────────
   const keys: Record<string, boolean> = {};
@@ -136,12 +146,12 @@ export function createAsteroidsGame(
     spawnAsteroids(3 + level);
   }
 
-  function explode(x: number, y: number, color: string, count = 8) {
-    for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color));
+  function explode(x: number, y: number, tone: ParticleTone, count = 8) {
+    for (let i = 0; i < count; i++) particles.push(new Particle(x, y, tone));
   }
 
   function killShip() {
-    explode(ship.x, ship.y, COLORS.ship, 14);
+    explode(ship.x, ship.y, "ship", 14);
     ship.dead = true;
     lives--;
     if (lives <= 0) {
@@ -207,7 +217,7 @@ export function createAsteroidsGame(
           b.dead = true;
           a.dead = true;
           score += POINTS[a.size];
-          explode(a.x, a.y, COLORS.asteroid, a.size * 5);
+          explode(a.x, a.y, "asteroid", a.size * 5);
           newAsteroids.push(...a.split());
           if (!powerUpSpawned) {
             killsSinceSpawn++;
@@ -239,23 +249,36 @@ export function createAsteroidsGame(
 
   // ── Draw ────────────────────────────────────────────────────────────────────
   function draw(c: CanvasRenderingContext2D) {
-    c.fillStyle = "#000";
+    const pal = palette;
+    c.fillStyle = pal.background;
     c.fillRect(0, 0, W, H);
 
-    particles.forEach((p) => p.draw(c));
-    asteroids.forEach((a) => a.draw(c));
-    powerUps.forEach((p) => p.draw(c));
-    bullets.forEach((b) => b.draw(c));
-    if (state !== "ready" && state !== "gameover") ship.draw(c);
+    particles.forEach((p) => p.draw(c, pal));
+    asteroids.forEach((a) => a.draw(c, pal));
+    powerUps.forEach((p) => p.draw(c, pal));
+    bullets.forEach((b) => b.draw(c, pal));
+    if (state !== "ready" && state !== "gameover") ship.draw(c, pal);
   }
 
-  // Logical size stays 800×600; the backing store follows devicePixelRatio for crisp lines.
+  // Logical size stays 800×600; the backing store follows devicePixelRatio for crisp lines,
+  // or the skin's fixed resolution (retro renders at 400×300 and is scaled up without smoothing).
   function fitToDevicePixels(c: CanvasRenderingContext2D) {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const scale = palette.resolution ?? (window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * scale);
+    canvas.height = Math.round(H * scale);
+    c.setTransform(scale, 0, 0, scale, 0, 0);
+    // Assigning canvas.width resets the context, smoothing included.
+    c.imageSmoothingEnabled = !palette.pixelated;
+    canvas.style.imageRendering = palette.pixelated ? "pixelated" : "";
     draw(c);
+  }
+
+  function setSkin(skin: SkinId) {
+    const next = SKINS[skin];
+    if (!next || next === palette) return;
+    palette = next;
+    // Refit (resolution may change) and redraw now: the loop is stopped while paused.
+    fitToDevicePixels(ctx!);
   }
 
   // ── Loop ────────────────────────────────────────────────────────────────────
@@ -317,7 +340,7 @@ export function createAsteroidsGame(
   function end() {
     if (state === "ready" || state === "gameover") return;
     const wasPaused = state === "paused";
-    if (!ship.dead) explode(ship.x, ship.y, COLORS.ship, 14);
+    if (!ship.dead) explode(ship.x, ship.y, "ship", 14);
     ship.dead = true;
     ship.tripleShot = 0;
     state = "gameover";
@@ -394,6 +417,7 @@ export function createAsteroidsGame(
     resume,
     end,
     restart,
+    setSkin,
     destroy() {
       stopLoop();
       window.removeEventListener("keydown", onKeyDown);

@@ -1,20 +1,24 @@
 // Entities ported from references/started-games/02-asteroids/game.js.
-// No globals: every draw() receives the context and Ship.update() receives the held keys.
+// No globals: every draw() receives the context and the active palette (skins.ts), and
+// Ship.update() receives the held keys.
+import type { Palette } from "./skins";
 
 export const W = 800;
 export const H = 600;
 
 export type Keys = Readonly<Record<string, boolean>>;
 
-// ── Palette (neon over the CRT) ───────────────────────────────────────────────
-export const COLORS = {
-  ship: "#00f5ff",
-  asteroid: "#bff9ff",
-  bullet: "#f5ff00",
-  powerUp: "#ff006e",
-  flame: "#f5ff00",
-  flameCore: "#ff006e",
-} as const;
+// Applies the skin's glow; with glow 0 the context keeps shadowBlur at 0.
+function glow(
+  ctx: CanvasRenderingContext2D,
+  pal: Palette,
+  color: string,
+  blur: number,
+) {
+  if (pal.glow <= 0) return;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = blur * pal.glow;
+}
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 export const wrap = (v: number, max: number) => ((v % max) + max) % max;
@@ -63,14 +67,24 @@ export class Bullet {
     if (this.ttl <= 0) this.dead = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
     ctx.save();
-    ctx.shadowColor = COLORS.bullet;
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = COLORS.bullet;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
+    glow(ctx, pal, pal.bullet, 8);
+    ctx.fillStyle = pal.bullet;
+    if (pal.pixelated) {
+      // Square shot snapped to the 2-px grid of the low-res backing store.
+      const s = this.radius * 2;
+      ctx.fillRect(
+        Math.round((this.x - this.radius) / 2) * 2,
+        Math.round((this.y - this.radius) / 2) * 2,
+        s,
+        s,
+      );
+    } else {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 }
@@ -125,14 +139,14 @@ export class Asteroid {
     ];
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    ctx.strokeStyle = COLORS.asteroid;
+    ctx.strokeStyle = pal.asteroid;
     // Slightly thicker than the original so the CRT scanlines don't swallow the rocks.
-    ctx.lineWidth = 2;
-    ctx.lineJoin = "round";
+    ctx.lineWidth = pal.asteroidLineWidth;
+    ctx.lineJoin = pal.pixelated ? "miter" : "round";
     ctx.beginPath();
     ctx.moveTo(this.verts[0][0], this.verts[0][1]);
     for (let i = 1; i < this.verts.length; i++)
@@ -169,24 +183,26 @@ export class PowerUp {
     if (this.ttl <= 0) this.dead = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
     if (this.ttl < 2 && Math.floor(this.ttl * 8) % 2 === 0) return;
-    const pulse = 0.85 + Math.sin(performance.now() / 150) * 0.15;
+    const wave = Math.sin(performance.now() / 150);
+    // Retro pulses in two hard steps instead of a smooth breath.
+    const pulse = pal.pixelated ? (wave > 0 ? 1 : 0.84) : 0.85 + wave * 0.15;
     ctx.save();
-    ctx.shadowColor = COLORS.powerUp;
-    ctx.shadowBlur = 12;
+    glow(ctx, pal, pal.powerUp, 12);
     ctx.translate(this.x, this.y);
-    ctx.rotate(Math.PI / 4);
-    ctx.strokeStyle = COLORS.powerUp;
+    // Diamond everywhere except retro, which keeps it an axis-aligned square.
+    if (!pal.pixelated) ctx.rotate(Math.PI / 4);
+    ctx.strokeStyle = pal.powerUp;
     ctx.lineWidth = 2;
+    ctx.lineJoin = "miter";
     const r = this.radius * pulse;
     ctx.strokeRect(-r, -r, r * 2, r * 2);
     ctx.restore();
 
     ctx.save();
-    ctx.shadowColor = COLORS.powerUp;
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = COLORS.powerUp;
+    glow(ctx, pal, pal.powerUp, 6);
+    ctx.fillStyle = pal.powerUp;
     ctx.font = "bold 12px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -263,7 +279,7 @@ export class Ship {
     return [new Bullet(ox, oy, this.angle)];
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
     if (this.dead) return;
     // Blink during respawn invincibility
     if (this.invincible > 0 && Math.floor(this.invincible * 8) % 2 === 0)
@@ -272,11 +288,10 @@ export class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.shadowColor = COLORS.ship;
-    ctx.shadowBlur = 10;
-    ctx.strokeStyle = COLORS.ship;
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = "round";
+    glow(ctx, pal, pal.ship, 10);
+    ctx.strokeStyle = pal.ship;
+    ctx.lineWidth = pal.shipLineWidth;
+    ctx.lineJoin = pal.pixelated ? "miter" : "round";
 
     // Classic silhouette: triangle with a rear notch
     ctx.beginPath();
@@ -289,8 +304,8 @@ export class Ship {
 
     // Thruster flame
     if (this.thrusting && Math.random() > 0.35) {
-      ctx.shadowColor = COLORS.flameCore;
-      ctx.strokeStyle = Math.random() > 0.5 ? COLORS.flame : COLORS.flameCore;
+      if (pal.glow > 0) ctx.shadowColor = pal.flameCore;
+      ctx.strokeStyle = Math.random() > 0.5 ? pal.flame : pal.flameCore;
       ctx.beginPath();
       ctx.moveTo(-8, -4);
       ctx.lineTo(-8 - rand(6, 14), 0);
@@ -303,6 +318,9 @@ export class Ship {
 }
 
 // ── Particles (explosion) ─────────────────────────────────────────────────────
+// Particles keep the palette key, not the colour, so switching skin recolours debris in flight.
+export type ParticleTone = "ship" | "asteroid";
+
 export class Particle {
   x: number;
   y: number;
@@ -310,13 +328,13 @@ export class Particle {
   vy: number;
   life: number;
   ttl: number;
-  color: string;
+  tone: ParticleTone;
   dead = false;
 
-  constructor(x: number, y: number, color: string) {
+  constructor(x: number, y: number, tone: ParticleTone) {
     this.x = x;
     this.y = y;
-    this.color = color;
+    this.tone = tone;
     const angle = rand(0, Math.PI * 2);
     const speed = rand(30, 130);
     this.vx = Math.cos(angle) * speed;
@@ -333,9 +351,23 @@ export class Particle {
   }
 
   // No glow here on purpose: shadowBlur on every particle is too expensive.
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.globalAlpha = Math.max(0, this.ttl / this.life);
-    ctx.strokeStyle = this.color;
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
+    const fade = Math.max(0, this.ttl / this.life);
+    if (pal.pixelated) {
+      // 2×2 dot on the pixel grid, dimming in three hard steps like a phosphor decay.
+      ctx.globalAlpha = Math.ceil(fade * 3) / 3;
+      ctx.fillStyle = pal[this.tone];
+      ctx.fillRect(
+        Math.round(this.x / 2) * 2,
+        Math.round(this.y / 2) * 2,
+        2,
+        2,
+      );
+      ctx.globalAlpha = 1;
+      return;
+    }
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = pal[this.tone];
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);

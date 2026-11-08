@@ -28,6 +28,8 @@ import {
   type Paddle,
 } from "./entities";
 import { LEVELS } from "./levels";
+import { SKINS, type Palette } from "./skins";
+import { DEFAULT_SKIN, type SkinId } from "../shared/skins";
 
 export type BreakoutCallbacks = {
   onScore: (score: number) => void;
@@ -46,7 +48,12 @@ export type BreakoutGame = {
   resume: () => void;
   end: () => void; // FIN button: goes to gameover without calling onGameOver
   restart: () => void; // new run straight into "playing"
+  setSkin: (skin: SkinId) => void; // visual only: redraws at once, the run is untouched
   destroy: () => void; // cancels the rAF and removes every listener
+};
+
+export type BreakoutOptions = {
+  skin?: SkinId;
 };
 
 const GAME_KEYS = new Set([
@@ -72,6 +79,7 @@ function isFormControl(target: EventTarget | null) {
 export function createBreakoutGame(
   canvas: HTMLCanvasElement,
   callbacks: BreakoutCallbacks,
+  options: BreakoutOptions = {},
 ): BreakoutGame {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas 2D context not available");
@@ -93,6 +101,7 @@ export function createBreakoutGame(
   let lives = START_LIVES;
   let level = 1;
   let state: BreakoutState = "ready";
+  let palette: Palette = SKINS[options.skin ?? DEFAULT_SKIN];
 
   const keys = { ArrowLeft: false, ArrowRight: false };
 
@@ -241,22 +250,35 @@ export function createBreakoutGame(
 
   // ── Draw ────────────────────────────────────────────────────────────────────
   function draw() {
-    drawBackground(ctx);
+    const pal = palette;
+    drawBackground(ctx, pal);
     for (const block of blocks) {
-      if (block.alive) drawBlock(ctx, block);
+      if (block.alive) drawBlock(ctx, block, pal);
     }
-    for (const exp of explosions) drawExplosion(ctx, exp);
-    drawPaddle(ctx, paddle);
-    drawBall(ctx, ball);
+    for (const exp of explosions) drawExplosion(ctx, exp, pal);
+    drawPaddle(ctx, paddle, pal);
+    drawBall(ctx, ball, pal);
   }
 
-  // Logical size stays 800×600; the backing store follows devicePixelRatio for crisp lines.
+  // Logical size stays 800×600; the backing store follows devicePixelRatio for crisp lines,
+  // or the skin's fixed resolution (retro renders at 400×300 and is scaled up without smoothing).
   function fitToDevicePixels() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const scale = palette.resolution ?? (window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * scale);
+    canvas.height = Math.round(H * scale);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    // Assigning canvas.width resets the context, smoothing included.
+    ctx.imageSmoothingEnabled = !palette.pixelated;
+    canvas.style.imageRendering = palette.pixelated ? "pixelated" : "";
     draw();
+  }
+
+  function setSkin(skin: SkinId) {
+    const next = SKINS[skin];
+    if (!next || next === palette) return;
+    palette = next;
+    // Refit (resolution may change) and redraw now: the loop is stopped outside "playing".
+    fitToDevicePixels();
   }
 
   // ── Loop ────────────────────────────────────────────────────────────────────
@@ -405,6 +427,7 @@ export function createBreakoutGame(
     resume,
     end,
     restart,
+    setSkin,
     destroy() {
       stopLoop();
       window.removeEventListener("keydown", onKeyDown);

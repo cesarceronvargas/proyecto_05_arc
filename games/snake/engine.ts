@@ -19,7 +19,9 @@ import {
   type Cell,
   type Dir,
 } from "./entities";
+import { SKINS, type Palette } from "./skins";
 import { FRUIT_KEYS, type FruitKey } from "./sprites";
+import { DEFAULT_SKIN, type SkinId } from "../shared/skins";
 
 export type SnakeCallbacks = {
   onScore: (score: number) => void;
@@ -38,7 +40,12 @@ export type SnakeGame = {
   resume: () => void;
   end: () => void; // FIN button: goes to gameover without calling onGameOver
   restart: () => void; // new run straight into "playing"
+  setSkin: (skin: SkinId) => void; // visual only: redraws at once, the run is untouched
   destroy: () => void; // cancels the rAF and removes every listener
+};
+
+export type SnakeOptions = {
+  skin?: SkinId;
 };
 
 const FRUITS_URL = "/games/snake/fruits.png";
@@ -93,10 +100,13 @@ function isFormControl(target: EventTarget | null) {
 export function createSnakeGame(
   canvas: HTMLCanvasElement,
   callbacks: SnakeCallbacks,
+  options: SnakeOptions = {},
 ): SnakeGame {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas 2D context not available");
   const ctx: CanvasRenderingContext2D = context;
+
+  let palette: Palette = SKINS[options.skin ?? DEFAULT_SKIN];
 
   // ── Game state ──────────────────────────────────────────────────────────────
   let snake: Cell[] = []; // snake[0] is the head
@@ -228,18 +238,31 @@ export function createSnakeGame(
 
   // ── Draw ────────────────────────────────────────────────────────────────────
   function draw() {
-    drawBackground(ctx);
-    if (fruit) drawFruit(ctx, fruitsImage, fruitKey, fruit);
-    drawSnake(ctx, snake, dir);
+    const pal = palette;
+    drawBackground(ctx, pal);
+    if (fruit) drawFruit(ctx, fruitsImage, fruitKey, fruit, pal);
+    drawSnake(ctx, snake, dir, pal);
   }
 
-  // Logical size stays 800×600; the backing store follows devicePixelRatio for crisp lines.
+  // Logical size stays 800×600; the backing store follows devicePixelRatio for crisp lines,
+  // or the skin's fixed resolution (retro renders at 400×300 and is scaled up without smoothing).
   function fitToDevicePixels() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const scale = palette.resolution ?? (window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * scale);
+    canvas.height = Math.round(H * scale);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    // Assigning canvas.width resets the context, smoothing included.
+    ctx.imageSmoothingEnabled = !palette.pixelated;
+    canvas.style.imageRendering = palette.pixelated ? "pixelated" : "";
     draw();
+  }
+
+  function setSkin(skin: SkinId) {
+    const next = SKINS[skin];
+    if (!next || next === palette) return;
+    palette = next;
+    // Refit (resolution may change) and redraw now: the loop is stopped outside "playing".
+    fitToDevicePixels();
   }
 
   // ── Loop ────────────────────────────────────────────────────────────────────
@@ -377,6 +400,7 @@ export function createSnakeGame(
     resume,
     end,
     restart,
+    setSkin,
     destroy() {
       stopLoop();
       fruitsImage.onload = null;
